@@ -8,7 +8,7 @@ pip install -r requirements.txt
 ```
 
 ## Pretrained weight
-Download pretrained weight at: 
+Download pretrained weight at: https://drive.google.com/drive/folders/1gQptkw5tvgpM_I9drOmckfyylsEc6xno?usp=sharing
 
 ## Inference
 Check ```pipeline.py``` for logics of code usage
