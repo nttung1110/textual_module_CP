@@ -9,6 +9,7 @@ import os.path as osp
 import pdb
 
 from dotmap import DotMap
+from datetime import datetime
 from googletrans import Translator
 
 # temporary import
@@ -26,6 +27,8 @@ def run_pipeline_single_document(args, single_path_document, file_name):
     # read and pre-process document
     translator = Translator()
     utterance_by_speakers, conversation_list, start_offset_utt_by_speakers = DARPA_text_data_read(single_path_document, translator)
+
+    start = datetime.now()
 
     # init textual feature extractor
     textES = TextualESCoMPM(args)
@@ -59,7 +62,10 @@ def run_pipeline_single_document(args, single_path_document, file_name):
     # Aggregate to find final change point
     final_cp = aggregator_core.simple_aggregator(all_peaks_track_refined)
 
-    res = {'final_cp': list(final_cp)}
+    time_processing = datetime.now() - start
+    res = {'final_cp': list(final_cp),
+            'type': 'text',
+            'time_processing': int(time_processing.total_seconds())}
 
     write_fname = file_name.split('.')[0]+'.json'
     path_write = osp.join(args.output_cp_path, write_fname)
