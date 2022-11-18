@@ -3,8 +3,8 @@
 ## Installation
 
 ```
-conda create --name text_module python==3.8
-pip install -r requirements.txt
+conda create --name textual_module python==3.8
+conda env update -n textual_module --file environment.yml
 ```
 
 ## Pretrained weight
