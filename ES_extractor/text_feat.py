@@ -118,6 +118,9 @@ class TextualESCoMPM():
         list_feat_s2 = []
 
         count = 0
+        list_cur_utterance = {'s1': [], 's2': []}
+        dict_feat = {}
+
         with torch.no_grad():
             for i_batch, data in enumerate(tqdm(test_dataloader)):
                 """Prediction"""
@@ -130,13 +133,26 @@ class TextualESCoMPM():
 
                 # check whether this feat belongs to which speaker
                 cur_utterance = batch_utterance[0]
+                if cur_utterance not in dict_feat:
+                    dict_feat[cur_utterance] = feat_emotion[0].tolist()
 
-                if cur_utterance in dict_speaker_utt['s1']:
-                    list_feat_s1.append(feat_emotion[0].tolist())
-                else:
-                    list_feat_s2.append(feat_emotion[0].tolist())
+                # if cur_utterance in dict_speaker_utt['s1']:
+                #     list_feat_s1.append(feat_emotion[0].tolist())
+                #     list_cur_utterance['s1'].append(cur_utterance)
+                # else:
+                #     list_feat_s2.append(feat_emotion[0].tolist())
+                #     list_cur_utterance['s2'].append(cur_utterance)
                 
                 count += 1
+
+        for each_key_speaker in dict_speaker_utt:
+            list_speaker_utterance = dict_speaker_utt[each_key_speaker]
+
+            for each_utt in list_speaker_utterance:
+                if each_key_speaker == 's1':
+                    list_feat_s1.append(dict_feat[each_utt])
+                else:
+                    list_feat_s2.append(dict_feat[each_utt])
 
         feat_s1 = np.array(list_feat_s1)
         feat_s2 = np.array(list_feat_s2)

@@ -1,6 +1,12 @@
 {
-    "final_cp": [
+    "final_cp_result": [
         978,
         1526
-    ]
+    ],
+    "fina_cp_llr": [
+        1.0,
+        1.0
+    ],
+    "type": "text",
+    "time_processing": 7
 }
