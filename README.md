@@ -14,4 +14,5 @@ Link to download pretrained weights for dailydialog dataset
     - dataset: dailydialog, EMORY, iemocap, MELD
     - class: "emotion" or "sentiment"
     - sampling: 0.0 ~ 1.0, default: 1.0
+    - 
 Check ```pipeline.py``` for logics of code usage
