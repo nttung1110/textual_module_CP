@@ -1,1 +1,3 @@
 pretrained_ckpt/
+TEXT_CCU_output_v1/
+*.pyc

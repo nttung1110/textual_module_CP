@@ -3,6 +3,8 @@ import numpy as np
 import pdb
 import copy
 import torch
+import xml.etree.ElementTree as ET
+
 
 from dotmap import DotMap
 from tqdm import tqdm
@@ -12,6 +14,95 @@ from CoMPM.DARPA_infer_dataset import *
 from CoMPM.model import ERC_model
 from googletrans import Translator
 from transformers import RobertaTokenizer
+
+def DARPA_text_data_read_from_xml(path_xml_ltf, path_xml_psm, translator):
+    '''
+        Processing DARPA textual dataset to separate utterances by speakers
+            + Input: Accepting xml file
+            + Output: Return dictionary indexing to specific speaker along with that speaker list of utterances
+    '''
+
+
+    doc_ltf = ET.parse(path_xml_ltf)
+    doc_psm = ET.parse(path_xml_psm)
+
+    root_ltf = doc_ltf.getroot()[0][0]
+    root_psm = doc_psm.getroot()
+
+    list_cur_utterance = []
+    list_start_char_offset = []
+    list_total_char = []
+
+    # construct from ltf
+    for each_ltf in root_ltf:
+
+        zn_text = each_ltf[0].text
+        print(zn_text)
+        en_text = translator.translate(zn_text).text 
+
+        list_cur_utterance.append(en_text)
+        list_start_char_offset.append(int(each_ltf.get('start_char')))
+
+        total_char = int(each_ltf.get('end_char'))- int(each_ltf.get('start_char')) + 1
+        list_total_char.append(total_char)
+
+    # construct from psm
+    list_corresponding_sid = []
+    list_corresponding_id_seg = []
+
+    run_idx = 0
+    for each_psm in root_psm:
+
+        if each_psm.get('type') == "message":
+            run_idx += 1
+
+            # find sid 
+
+            found_match_psm = False
+            for ii in range(3):
+                aa = each_psm[ii]
+
+                if aa.get('name') == 'participant':
+                    exact_psm = aa
+                    found_match_psm = True
+                    break
+            
+            if found_match_psm:
+                s_id = int(exact_psm.get('value'))
+                id_seg = each_psm[0].get('value')
+
+                list_corresponding_sid.append(s_id)
+                list_corresponding_id_seg.append(id_seg)
+    
+    # There are some cases missing utterance sid => filter list utterance
+    len_s_id = len(list_corresponding_sid)
+    list_cur_utterance = list_cur_utterance[:len_s_id]
+    list_start_char_offset = list_start_char_offset[:len_s_id]
+    list_total_char = list_total_char[:len_s_id]
+
+
+    # construct text data similarly as DARPA_text_data_read
+    text_data = []
+    dict_utterance = {'s1': [], 's2': []}
+    dict_start_offset = {'s1': [], 's2': []}
+
+    first_speaker = list_corresponding_sid[0]
+    for idx in range(len(list_cur_utterance)):
+        cur_sid = list_corresponding_sid[idx]
+        cur_utterance = list_cur_utterance[idx]
+        cur_start_offset_char = list_start_char_offset[idx]
+
+        sample_text = str(cur_sid) + ':' + cur_utterance
+        text_data.append(sample_text)
+
+        if cur_sid == first_speaker:
+            dict_utterance['s1'].append(cur_utterance)
+            dict_start_offset['s1'].append(cur_start_offset_char)
+        else:
+            dict_utterance['s2'].append(cur_utterance)
+            dict_start_offset['s2'].append(cur_start_offset_char)
+
+    return dict_utterance, text_data, dict_start_offset
 
 
 def DARPA_text_data_read(path, translator):
@@ -172,11 +263,17 @@ if __name__ == "__main__":
     args.pretrained_model_ckpt = '/home/nttung/research/Monash_CCU/mini_eval/text_module/src_multistage_approach/ES_extractor/CoMPM/ckpt/models/dailydialog_models/roberta-large/pretrained/no_freeze/emotion/1.0/model.bin'
 
     path_csv_test = '/home/nttung/research/Monash_CCU/mini_eval/text_data/en_train/M01000G9C_en.txt'
-    utterance_by_speakers, conversation_list = DARPA_text_data_read(path_csv_test)
+    # utterance_by_speakers, conversation_list = DARPA_text_data_read(path_csv_test)
     # textES = TextualES(args)
 
 
-    torch.cuda.empty_cache()
-    textES = TextualESCoMPM(args)
+    # torch.cuda.empty_cache()
+    # textES = TextualESCoMPM(args)
 
-    textES.extract_ES_emotion_per_track(conversation_list, utterance_by_speakers)
+    # textES.extract_ES_emotion_per_track(conversation_list, utterance_by_speakers)
+
+    translator = Translator()
+    # test with xml file
+    path_xml_ltf = '/home/nttung/research/Monash_CCU/mini_eval/sub_data/text/ltf/M01000EY0.ltf.xml'
+    path_xml_psm = '/home/nttung/research/Monash_CCU/mini_eval/sub_data/text/psm/M01000EY0.psm.xml'
+    DARPA_text_data_read_from_xml(path_xml_ltf, path_xml_psm, translator)

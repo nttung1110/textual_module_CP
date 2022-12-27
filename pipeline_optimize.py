@@ -2,7 +2,6 @@ import os
 import numpy as np 
 import cv2
 import pdb
-import bbox_visualizer as bbv
 import torch
 import json
 import os.path as osp
@@ -16,17 +15,17 @@ from googletrans import Translator
 import sys
 sys.path.append('./ES_extractor')
 
-from ES_extractor.text_feat import DARPA_text_data_read, TextualESCoMPM
+from ES_extractor.text_feat import DARPA_text_data_read_from_xml, TextualESCoMPM
 from UCP.inference_ucp import detect_CP_tracks
 from CP_aggregator import aggregator_core
 
 # from CP_aggregator.segment_core import UniformSegmentator
 # from CP_aggregator.aggregator_core import SimpleAggregator
 
-def run_pipeline_single_document(args, single_path_document, textES, file_name):
+def run_pipeline_single_document(args, path_ltf, path_psm, textES, path_write):
     # read and pre-process document
     translator = Translator()
-    utterance_by_speakers, conversation_list, start_offset_utt_by_speakers = DARPA_text_data_read(single_path_document, translator)
+    utterance_by_speakers, conversation_list, start_offset_utt_by_speakers = DARPA_text_data_read_from_xml(path_ltf, path_psm, translator)
 
     start = datetime.now()
     
@@ -78,8 +77,7 @@ def run_pipeline_single_document(args, single_path_document, textES, file_name):
             'type': 'text',
             'time_processing': int(time_processing.total_seconds())}
 
-    write_fname = file_name.split('.')[0]+'.json'
-    path_write = osp.join(args.output_cp_path, write_fname)
+    # path_write = osp.join(args.output_cp_path, write_fname)
     with open(path_write, 'w') as fp:
         json.dump(res, fp, indent=4)
 
@@ -97,27 +95,40 @@ if __name__ == "__main__":
     args.len_utt_tracks = 25
     args.max_cp = 3
     
-    args.output_cp_path = './output_cp'
+    args.output_cp_path = './TEXT_CCU_output_v1'
     if os.path.isdir(args.output_cp_path) is False:
         os.mkdir(args.output_cp_path)
 
-    path_inference_document = "/home/nttung/research/Monash_CCU/mini_eval/text_data/en_train"
+    path_inference_ltf = "/home/nttung/research/Monash_CCU/mini_eval/sub_data/text/ltf/"
+    path_inference_psm = "/home/nttung/research/Monash_CCU/mini_eval/sub_data/text/psm/"
     
+    # exlude those already inference files
+    list_already_extract_files = os.listdir(args.output_cp_path)
+
     # init model
     textES = TextualESCoMPM(args)
 
-    for file_name in os.listdir(path_inference_document):
-        # only read chinese file
-        if 'en' in file_name:
+    for file_name in os.listdir(path_inference_ltf):
+        file_name_no_ext = file_name.split('.')[0]
+        if file_name_no_ext + '.json' in list_already_extract_files:
+            print('Already extract file:', file_name_no_ext)
             continue
 
         # debug mode only
-        # if file_name != 'M01000GK4_zh.txt':
+        # if file_name != 'M01000H3T.ltf.xml':
         #     continue
-
         print(file_name)
 
-        full_path_document = osp.join(path_inference_document, file_name)
-        
+        file_name_ltf = file_name
+        file_name_psm = file_name.split('.')[0] + '.psm.xml'
 
-        run_pipeline_single_document(args, full_path_document, textES, file_name)  
+
+        path_ltf_file = osp.join(path_inference_ltf, file_name_ltf)
+        path_psm_file = osp.join(path_inference_psm, file_name_psm)
+
+
+
+        write_f_name = file_name.split('.')[0] + '.json'
+        path_write = osp.join(args.output_cp_path, write_f_name)
+
+        run_pipeline_single_document(args, path_ltf_file, path_psm_file, textES, path_write)  

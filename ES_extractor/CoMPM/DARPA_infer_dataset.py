@@ -32,8 +32,11 @@ class Darpa_raw_loader(Dataset):
                 context_speaker = []
                 continue
                 
-            speaker = data.strip().split(':')[0]
-            utt = data.strip().split(':')[1]
+            # speaker = data.strip().split(':')[0]
+            # utt = data.strip().split(':')[1]
+
+            speaker = data[:6]
+            utt = data[7:]
             # emo = data.strip().split('\t')[-1]
             
             # if emo in pos:
